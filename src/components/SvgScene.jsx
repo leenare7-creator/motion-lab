@@ -66,7 +66,7 @@ export default function SvgScene({ lab, registerRef }) {
           return <svg x="0" y="0" width={crop.width} height={crop.height}
             viewBox={`${crop.x} ${crop.y} ${crop.width} ${crop.height}`} overflow="hidden">
             <image href={crop.href} x="0" y="0" width={crop.sourceWidth} height={crop.sourceHeight}
-              preserveAspectRatio="none"/>
+              preserveAspectRatio="none" crossOrigin="anonymous"/>
           </svg>
         })()
       : layer.type === 'focusCrop'
@@ -84,6 +84,7 @@ export default function SvgScene({ lab, registerRef }) {
                   width={crop.sourceWidth}
                   height={crop.sourceHeight}
                   preserveAspectRatio="none"
+                  crossOrigin="anonymous"
                   opacity={isFocused?1:0}
                 />
               </svg>
