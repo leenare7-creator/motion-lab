@@ -28,6 +28,7 @@ export default function PrototypeInspector({ lab }) {
         <button className="prototype-primary" onClick={lab.addIptvDemo}>Add IPTV focus demo</button>
       </div> : <>
         <div className="selected-title"><b>{l.name}</b><span>{l.type}</span></div>
+        {l.prototype?.autoDetected&&<div className="auto-focus-note"><b>Auto detected · {l.prototype.confidence}</b><span>{l.prototype.reason}</span></div>}
         <Section title="Focus target">
           <div className="toggle-line"><span>Focusable</span><button className={'toggle '+(proto.focusable?'on':'')} onClick={()=>lab.setLayerPrototype(l.id,{focusable:!proto.focusable})}><i/></button></div>
           {proto.focusable && <>
