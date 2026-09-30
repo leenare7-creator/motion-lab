@@ -190,8 +190,15 @@ export default async function handler(req,res){
 
     const parsed=JSON.parse(text)
     const ids=parsed.ideas?.map(x=>x.recipeId)||[]
-    if(ids.length!==3||new Set(ids).size!==3||ids.some(id=>!RECIPES.includes(id))){
-      return res.status(502).json({error:'AI director returned invalid recipe set'})
+    const lanes=parsed.ideas?.map(x=>x.lane)||[]
+    const laneSet=new Set(lanes)
+    if(
+      ids.length!==3||
+      new Set(ids).size!==3||
+      ids.some(id=>!RECIPES.includes(id))||
+      !['Safe','Expressive','Playful'].every(l=>laneSet.has(l))
+    ){
+      return res.status(502).json({error:'AI director returned invalid direction set'})
     }
 
     return res.status(200).json({source:'ai',analysis:parsed.analysis,ideas:parsed.ideas})
