@@ -14,14 +14,13 @@ export default function App(){
   const lab=useMotionLab()
   const [pasteOpen,setPasteOpen]=useState(false)
   const [exportOpen,setExportOpen]=useState(false)
-  const [mobilePane,setMobilePane]=useState('canvas')
   const [desktopOnly,setDesktopOnly]=useState(false)
 
   useEffect(()=>{
     const detect=()=>{
       const ua=navigator.userAgent||''
       const isPhoneOrTablet=/iPhone|iPad|iPod|Android|Mobile/i.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)
-      const tooNarrow=window.matchMedia('(max-width: 900px)').matches
+      const tooNarrow=window.matchMedia('(max-width: 1023px)').matches
       setDesktopOnly(isPhoneOrTablet||tooNarrow)
     }
     detect()
@@ -73,19 +72,13 @@ export default function App(){
 
   return <div className="app">
     <TopBar lab={lab} onExport={()=>setExportOpen(true)} onShare={()=>navigator.clipboard?.writeText(location.href).then(()=>lab.notify('링크를 복사했습니다.'))} />
-    <div className={`editor-shell mobile-pane-${mobilePane}`}>
+    <div className="editor-shell">
       <ToolRail />
       <LayersPanel lab={lab} onPaste={()=>setPasteOpen(true)} />
       <CanvasStage lab={lab} />
       {lab.editorMode==='prototype'?<PrototypeInspector lab={lab}/>:<Inspector lab={lab} />}
       <Timeline lab={lab} />
     </div>
-    <nav className="mobile-dock" aria-label="Mobile workspace">
-      <button className={mobilePane==='canvas'?'active':''} onClick={()=>setMobilePane('canvas')}><span>▣</span>Canvas</button>
-      <button className={mobilePane==='layers'?'active':''} onClick={()=>setMobilePane('layers')}><span>☷</span>Layers</button>
-      <button className={mobilePane==='inspector'?'active':''} onClick={()=>setMobilePane('inspector')}><span>◫</span>{lab.editorMode==='prototype'?'Focus':'Inspect'}</button>
-      <button className={mobilePane==='timeline'?'active':''} onClick={()=>setMobilePane('timeline')}><span>◇</span>Timeline</button>
-    </nav>
     <PasteDialog open={pasteOpen} onClose={()=>setPasteOpen(false)} lab={lab}/>
     <ExportDialog open={exportOpen} onClose={()=>setExportOpen(false)} lab={lab}/>
     {lab.toast&&<div className="toast show">{lab.toast}</div>}
