@@ -7,6 +7,29 @@ const EPS = .04
 const emptyLinks=()=>({up:null,down:null,left:null,right:null})
 const focusProto=(extra={})=>({focusable:false,focusId:'',scale:null,links:emptyLinks(),...extra})
 
+function uiStudioLayers(payload){
+  const w=Number(payload?.viewport?.width)||1920,h=Number(payload?.viewport?.height)||1080
+  const href=payload?.sourceImageUrl
+  if(!href)throw new Error('UI Studio 화면 이미지가 없습니다.')
+  const scale=Math.min(720/w,460/h)
+  const ox=(800-w*scale)/2,oy=(560-h*scale)/2
+  const base=`translate(${ox} ${oy}) scale(${scale})`
+  const background={
+    id:uid('ui-screen'),name:payload.title||'UI Studio screen',type:'image',tag:'image',parentId:null,order:0,
+    baseTransform:base,transform:defaultTransform(),motion:defaultMotion(false),appearance:defaultAppearance(),keyframes:[],
+    original:null,attrs:{href,x:'0',y:'0',width:String(w),height:String(h),preserveAspectRatio:'none'},
+    prototype:focusProto(),sourceMeta:{fileKey:payload.fileKey,nodeId:payload.nodeId,deepLink:payload.deepLink}
+  }
+  const focusables=(payload.focusables||[]).map((f,i)=>({
+    id:uid('focus'),name:f.name||`Focus ${i+1}`,type:'focusCrop',parentId:null,order:i+1,
+    baseTransform:base,transform:defaultTransform(),motion:defaultMotion(false),appearance:defaultAppearance(),keyframes:[],
+    attrs:{},original:null,
+    crop:{x:Number(f.x)||0,y:Number(f.y)||0,width:Number(f.width)||1,height:Number(f.height)||1,screenWidth:w,screenHeight:h,href},
+    prototype:focusProto({focusable:true,focusId:f.id||`focus-${i+1}`,scale:null,autoDetected:true,confidence:f.confidence||'medium',reason:f.reason||'UI Studio auto detection',nodeType:f.nodeType||'FRAME'})
+  }))
+  return [background,...focusables]
+}
+
 const initialLayers = () => {
   const initial = importSvg(defaultBookmarkSvg, 0, 'Bookmark / Figma SVG')
   const root = initial[0]
@@ -54,6 +77,7 @@ export function useMotionLab() {
   const [editorMode,setEditorMode]=useState('animate')
   const [focusedId,setFocusedId]=useState(null)
   const [pressedId,setPressedId]=useState(null)
+  const [sourceContext,setSourceContext]=useState(null)
   const [focusSettings,setFocusSettings]=useState({duration:180,easingPreset:'tv',easing:'cubic-bezier(.2,0,0,1)',scale:1.08,ringGap:6,rapid:'interrupt'})
   const [snapshots, setSnapshots] = useState([])
   const [toast, setToast] = useState('')
@@ -278,12 +302,24 @@ export function useMotionLab() {
   const activateFocus=useCallback(()=>{if(!focusedId){notify('포커스 대상이 없습니다.');return}setPressedId(focusedId);setTimeout(()=>setPressedId(null),110);notify(`${layersRef.current.find(l=>l.id===focusedId)?.name||'Target'} · OK`)},[focusedId,notify])
   const addIptvDemo=useCallback(()=>{const start=childrenOf(null).length,cards=[...demoCard('Movie 01',245,210,start),...demoCard('Movie 02',410,210,start+1),...demoCard('Movie 03',575,210,start+2),...demoCard('Movie 04',245,335,start+3),...demoCard('Movie 05',410,335,start+4),...demoCard('Movie 06',575,335,start+5)],first=cards.find(x=>x.prototype?.focusable);applyLayers('Add IPTV focus demo',prev=>[...prev,...cards]);setTheme('mono');setEditorMode('prototype');setFocusedId(first?.id||null);setSelectedId(first?.id||null);notify('IPTV 포커스 데모를 추가했습니다.')},[childrenOf,applyLayers,notify])
 
+  const importUiStudioPayload=useCallback(payload=>{
+    try{
+      const next=uiStudioLayers(payload)
+      applyLayers('Import UI Studio screen',()=>next)
+      const first=next.find(l=>l.prototype?.focusable)
+      setSourceContext({source:'ui-studio',title:payload.title||'IPTV screen',fileKey:payload.fileKey,nodeId:payload.nodeId,deepLink:payload.deepLink,detected:(payload.focusables||[]).length})
+      setEditorMode('prototype');setTheme('mono');setPlaying(false);setTime(0)
+      setFocusedId(first?.id||null);setSelectedId(first?.id||next[0]?.id||null)
+      notify(first?`UI Studio에서 포커스 후보 ${(payload.focusables||[]).length}개를 가져왔습니다.`:'화면은 가져왔지만 자동 포커스 후보를 찾지 못했습니다.')
+    }catch(e){notify(e instanceof Error?e.message:'UI Studio 가져오기 실패')}
+  },[applyLayers,notify])
+
   const addSnapshot = useCallback(() => setSnapshots(s => [...s, { id:uid('snap'), t:time, selectedId }]), [time, selectedId])
 
   const exportJson = useCallback(() => JSON.stringify({
-    app:'Motion Lab', version:2,
-    playback:{duration,speed,loop}, canvas:{theme}, prototype:{focusSettings,focusedId}, layers,
-  }, null, 2), [duration,speed,loop,theme,layers,focusSettings,focusedId])
+    app:'Motion Lab', version:3,
+    playback:{duration,speed,loop}, canvas:{theme}, source:sourceContext, prototype:{focusSettings,focusedId}, layers,
+  }, null, 2), [duration,speed,loop,theme,layers,focusSettings,focusedId,sourceContext])
 
   return {
     layers, selected, selectedId, setSelectedId, childrenOf, descendantsOf, isGroup,
@@ -293,7 +329,7 @@ export function useMotionLab() {
     beginTransaction, commitTransaction, cancelTransaction,
     undo, redo, canUndo:history.canUndo, canRedo:history.canRedo, undoLabel:history.undoLabel, redoLabel:history.redoLabel,
     undoDepth:history.undoDepth, redoDepth:history.redoDepth, historyEntries:history.historyEntries,
-    editorMode,setEditorMode,focusedId,setFocusedId,focusedLayer,pressedId,focusableLayers,focusSettings,
-    setLayerPrototype,setFocusLink,updateFocusSetting,setFocusEasingPreset,activateFocus,addIptvDemo,
+    editorMode,setEditorMode,focusedId,setFocusedId,focusedLayer,pressedId,focusableLayers,focusSettings,sourceContext,
+    setLayerPrototype,setFocusLink,updateFocusSetting,setFocusEasingPreset,activateFocus,addIptvDemo,importUiStudioPayload,
   }
 }
