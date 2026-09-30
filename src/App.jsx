@@ -5,6 +5,7 @@ import ToolRail from './components/ToolRail'
 import LayersPanel from './components/LayersPanel'
 import CanvasStage from './components/CanvasStage'
 import Inspector from './components/Inspector'
+import PrototypeInspector from './components/PrototypeInspector'
 import Timeline from './components/Timeline'
 import PasteDialog from './components/PasteDialog'
 import ExportDialog from './components/ExportDialog'
@@ -35,7 +36,7 @@ export default function App(){
       <ToolRail />
       <LayersPanel lab={lab} onPaste={()=>setPasteOpen(true)} />
       <CanvasStage lab={lab} />
-      <Inspector lab={lab} />
+      {lab.editorMode==='prototype'?<PrototypeInspector lab={lab}/>:<Inspector lab={lab} />}
       <Timeline lab={lab} />
     </div>
     <PasteDialog open={pasteOpen} onClose={()=>setPasteOpen(false)} lab={lab}/>
