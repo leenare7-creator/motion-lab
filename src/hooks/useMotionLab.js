@@ -341,11 +341,30 @@ export function useMotionLab() {
     const descendants=[]
     const walk=pid=>current.filter(l=>l.parentId===pid).sort((a,b)=>a.order-b.order).forEach(child=>{descendants.push(child);walk(child.id)})
     walk(id)
-    const leaves=descendants.filter(l=>['shape','text','image'].includes(l.type)).slice(0,6)
+    const leaves=descendants.filter(l=>['shape','text','image'].includes(l.type)).slice(0,12)
+    const norm=v=>String(v||'').trim().toLowerCase()
+    const namedMatches=(names=[])=>{
+      const wanted=new Set(names.map(norm).filter(Boolean))
+      if(!wanted.size)return []
+      return leaves.filter(l=>{
+        const n=norm(l.name)
+        if(wanted.has(n))return true
+        for(const w of wanted)if(n.includes(w)||w.includes(n))return true
+        return false
+      })
+    }
+
+    const semanticTargets=namedMatches(plan.targetLayerNames)
+    const semanticAccents=namedMatches(plan.accentLayerNames)
     let targets=[root]
 
-    if(plan.layerStrategy==='stagger-children'&&leaves.length>=2)targets=leaves
-    else if(plan.layerStrategy==='accent-first'&&leaves.length>=2)targets=[leaves[0],...leaves.slice(1,4)]
+    if(plan.layerStrategy==='stagger-children'){
+      targets=semanticTargets.length>=2?semanticTargets:(leaves.length>=2?leaves.slice(0,6):[root])
+    }else if(plan.layerStrategy==='accent-first'){
+      const base=semanticTargets.length>=2?semanticTargets:(leaves.length>=2?leaves.slice(0,6):[root])
+      const accents=semanticAccents.length?semanticAccents:base.slice(0,1)
+      targets=[...accents,...base.filter(x=>!accents.some(a=>a.id===x.id))].slice(0,6)
+    }
 
     const targetIds=new Set(targets.map(l=>l.id))
     const delayFor=layer=>{
