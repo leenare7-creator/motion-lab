@@ -218,6 +218,11 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
         <div className="director-read-wide caution"><span>Keep in mind</span><b>{analysis.caution}</b></div>
       </section>}
 
+      {!!analysis?.parts?.length&&<section className="director-parts">
+        <span>Detected parts</span>
+        <div>{analysis.parts.map((p,i)=><em key={p.name+'-'+i}>{p.name}<small>{p.role}</small></em>)}</div>
+      </section>}
+
       <div className="idea-section-title"><b>3 directions</b><span>셋 중 하나만 골라도 바로 쓸 수 있게 서로 다른 성격으로 구성했어요.</span></div>
       <div className="idea-grid">
         {ideas.map((idea,i)=>{
