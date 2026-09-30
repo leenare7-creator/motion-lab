@@ -4,15 +4,48 @@ import { normalizeDirectorResult } from './motionDirectorSchema'
 const allowed=new Set(MOTION_RECIPES.map(r=>r.id))
 const sleep=ms=>new Promise(r=>setTimeout(r,ms))
 
+const semanticRole=name=>{
+  const n=(name||'').toLowerCase()
+  if(/eye|pupil|눈|동공/.test(n))return 'eye'
+  if(/mouth|smile|입|입술/.test(n))return 'mouth'
+  if(/star|spark|shine|별|반짝/.test(n))return 'accent'
+  if(/arm|hand|leg|foot|팔|손|다리|발/.test(n))return 'limb'
+  if(/body|face|head|torso|몸|얼굴|머리/.test(n))return 'body'
+  if(/text|label|word|copy|텍스트|라벨/.test(n))return 'text'
+  if(/bg|background|backdrop|배경/.test(n))return 'background'
+  if(/outline|stroke|line|선|외곽/.test(n))return 'outline'
+  return 'detail'
+}
+
+const depthOf=(layer,map)=>{
+  let depth=0,current=layer
+  while(current?.parentId&&depth<12){depth++;current=map.get(current.parentId)}
+  return depth
+}
+
 export function summarizeLayers(layers=[]){
   const names=layers.map(l=>l.name).filter(Boolean)
   const leaf=layers.filter(l=>['shape','text','image'].includes(l.type))
   const groups=layers.filter(l=>['svgRoot','group','userGroup'].includes(l.type))
+  const map=new Map(layers.map(l=>[l.id,l]))
+  const parts=leaf.slice(0,18).map((l,i)=>({
+    name:l.name||`part-${i+1}`,
+    type:l.type,
+    tag:l.tag||null,
+    role:semanticRole(l.name),
+    depth:depthOf(l,map),
+    parentName:map.get(l.parentId)?.name||null,
+    fill:l.original?.fill||l.attrs?.fill||null,
+    stroke:l.original?.stroke||l.attrs?.stroke||null,
+  }))
+  const accents=parts.filter(p=>['eye','mouth','accent','limb'].includes(p.role)).map(p=>p.name).slice(0,6)
   return {
     layerCount:layers.length,
     leafCount:leaf.length,
     groupCount:groups.length,
-    namedParts:names.slice(0,12),
+    namedParts:names.slice(0,18),
+    parts,
+    semanticHints:{accents,backgrounds:parts.filter(p=>p.role==='background').map(p=>p.name).slice(0,3)},
     hasText:layers.some(l=>l.type==='text'),
     hasImage:layers.some(l=>l.type==='image'),
     isLayered:leaf.length>=3,
@@ -42,6 +75,7 @@ function localAnalysis(asset){
     caution:category==='logo'?'브랜드 실루엣을 변형하지 않고 짧은 시간 안에 종료합니다.':'형태 인지를 해치지 않도록 회전·이동량을 제한합니다.',
     summary:s.isLayered?'여러 파트가 분리된 벡터라 전체 움직임에 짧은 레이어 시차를 더하기 좋습니다.':'실루엣이 명확해 전체 오브젝트 중심의 짧은 모션이 잘 맞습니다.',
     traits:[category,composition,complexity,asset.mime?.includes('svg')?'vector':'raster'],
+    parts:(s.parts||[]).slice(0,6).map((p,i)=>({name:p.name,role:p.role||'detail',importance:i===0?.82:.58})),
   }
 }
 
@@ -54,9 +88,9 @@ function localIdeas(asset,analysis,variation=0){
 
   if(category==='illustration'){
     ideas=[
-      idea('float-settle','Safe','Gentle Arrival','일러스트의 형태를 유지하면서 공기감 있는 등장감을 줍니다.',{duration:1.02,amplitude:.82,direction:'up',overshoot:.8,rotation:.5,layerStrategy:layered?'stagger-children':'whole',stagger:.07}),
-      idea('tilt-spring','Expressive','Character Bounce','기울기와 탄성을 더해 캐릭터성을 살립니다.',{duration:.9,amplitude:1.05,direction:'none',overshoot:1.05,rotation:1.1,layerStrategy:layered?'accent-first':'whole',stagger:.06}),
-      idea('reveal-up','Playful','Layered Reveal','짧은 상승과 시차를 이용해 파트가 조립되는 느낌을 만듭니다.',{duration:.82,amplitude:.9,direction:'up',overshoot:.7,rotation:.25,layerStrategy:layered?'stagger-children':'whole',stagger:.09}),
+      idea('float-settle','Safe','Gentle Arrival','일러스트의 형태를 유지하면서 공기감 있는 등장감을 줍니다.',{duration:1.02,amplitude:.82,direction:'up',overshoot:.8,rotation:.5,layerStrategy:layered?'stagger-children':'whole',stagger:.07,targetLayerNames:layered?(asset.structure?.parts||[]).filter(p=>p.role!=='background').slice(0,6).map(p=>p.name):[],accentLayerNames:asset.structure?.semanticHints?.accents||[]}),
+      idea('tilt-spring','Expressive','Character Bounce','기울기와 탄성을 더해 캐릭터성을 살립니다.',{duration:.9,amplitude:1.05,direction:'none',overshoot:1.05,rotation:1.1,layerStrategy:layered?'accent-first':'whole',stagger:.06,targetLayerNames:layered?(asset.structure?.parts||[]).filter(p=>p.role!=='background').slice(0,6).map(p=>p.name):[],accentLayerNames:asset.structure?.semanticHints?.accents||[]}),
+      idea('reveal-up','Playful','Layered Reveal','짧은 상승과 시차를 이용해 파트가 조립되는 느낌을 만듭니다.',{duration:.82,amplitude:.9,direction:'up',overshoot:.7,rotation:.25,layerStrategy:layered?'stagger-children':'whole',stagger:.09,targetLayerNames:layered?(asset.structure?.parts||[]).filter(p=>p.role!=='background').slice(0,6).map(p=>p.name):[],accentLayerNames:asset.structure?.semanticHints?.accents||[]}),
     ]
   }else if(category==='logo'){
     ideas=[
