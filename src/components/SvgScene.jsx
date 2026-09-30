@@ -50,6 +50,15 @@ export default function SvgScene({ lab, registerRef }) {
     const transform = [layer.baseTransform || '', `translate(${props.transform.x} ${props.transform.y})`, `rotate(${props.transform.rotation})`, `scale(${props.transform.scale})`].join(' ')
     const motion = proceduralTransform(props.motion, lab.time, lab.duration)
     const children = lab.childrenOf(layer.id)
+    const isFocused = lab.editorMode==='prototype' && layer.prototype?.focusable && lab.focusedId===layer.id
+    const isPressed = isFocused && lab.pressedId===layer.id
+    const focusScale = layer.prototype?.scale ?? lab.focusSettings.scale
+    const visualScale = isPressed ? Math.max(1,focusScale-.04) : isFocused ? focusScale : 1
+    const focusStyle = lab.editorMode==='prototype' ? {
+      transformBox:'fill-box', transformOrigin:'center', transform:`scale(${visualScale})`,
+      transition:`transform ${isPressed?90:lab.focusSettings.duration}ms ${lab.focusSettings.easing}, filter ${lab.focusSettings.duration}ms ${lab.focusSettings.easing}`,
+      filter:isFocused?'drop-shadow(0 10px 18px rgba(0,0,0,.24))':'none'
+    } : undefined
     const content = layer.type === 'shape' || layer.type === 'text' || layer.type === 'image'
       ? createElement(layer.tag || (layer.type === 'image' ? 'image' : 'g'), leafProps(layer), layer.textContent || undefined)
       : children.map(c => <Node key={c.id} layer={c} />)
@@ -59,9 +68,13 @@ export default function SvgScene({ lab, registerRef }) {
       transform={transform}
       opacity={props.opacity}
       className={lab.selectedId === layer.id ? 'scene-layer selected' : 'scene-layer'}
-      onPointerDown={e => { e.stopPropagation(); lab.setSelectedId(layer.id) }}
+      onPointerDown={e => {
+        e.stopPropagation()
+        lab.setSelectedId(layer.id)
+        if(lab.editorMode==='prototype' && layer.prototype?.focusable) lab.setFocusedId(layer.id)
+      }}
     >
-      <g transform={motion}>{content}</g>
+      <g transform={motion}><g style={focusStyle}>{content}</g></g>
     </g>
   }
 
