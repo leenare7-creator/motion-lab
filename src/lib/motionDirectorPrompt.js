@@ -12,7 +12,9 @@ Prefer subtle product-ready motion. Preserve recognizability and brand silhouett
 
 Allowed layerStrategy values: whole, stagger-children, accent-first.
 Allowed direction values: none, left, right, up, down.
-Motion plan fields: recipeId, duration, amplitude, direction, overshoot, rotation, layerStrategy, stagger, easing.
+Motion plan fields: recipeId, duration, amplitude, direction, overshoot, rotation, layerStrategy, stagger, easing, targetLayerNames, accentLayerNames.
+
+When SVG structure is provided, targetLayerNames and accentLayerNames must reuse layer names from the supplied structure. Do not invent new layer names.
 
 Return JSON only. Never invent recipe IDs outside the supplied recipe list.
 `
