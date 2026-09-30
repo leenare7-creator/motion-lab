@@ -4,7 +4,7 @@ export default function TopBar({ lab, onExport, onShare }) {
   const [historyOpen,setHistoryOpen]=useState(false)
   return <header className="topbar">
     <div className="brand"><div className="figma-mark">M</div><strong>Motion Lab</strong></div>
-    <div className="crumb">Drafts / <b>{lab.editorMode==='prototype'?'IPTV Focus Prototype':'Bookmark motion'}</b></div>
+    <div className="crumb">Drafts / <b>{lab.sourceContext?.title || (lab.editorMode==='prototype'?'IPTV Focus Prototype':'Bookmark motion')}</b>{lab.sourceContext&&<span className="source-badge">UI Studio</span>}</div>
     <div className="mode-switch">
       <button className={lab.editorMode==='animate'?'active':''} onClick={()=>lab.setEditorMode('animate')}>Animate</button>
       <button className={lab.editorMode==='prototype'?'active':''} onClick={()=>lab.setEditorMode('prototype')}>Prototype</button>
