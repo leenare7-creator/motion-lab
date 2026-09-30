@@ -9,22 +9,35 @@ const focusProto=(extra={})=>({focusable:false,focusId:'',scale:null,links:empty
 
 function uiStudioLayers(payload){
   const w=Number(payload?.viewport?.width)||1920,h=Number(payload?.viewport?.height)||1080
+  const sourceW=Number(payload?.sourceViewport?.width)||w
+  const sourceH=Number(payload?.sourceViewport?.height)||h
+  const sourceCrop=payload?.sourceCrop||{x:0,y:0,width:w,height:h}
   const href=payload?.sourceImageUrl
   if(!href)throw new Error('UI Studio 화면 이미지가 없습니다.')
   const scale=Math.min(720/w,460/h)
   const ox=(800-w*scale)/2,oy=(560-h*scale)/2
   const base=`translate(${ox} ${oy}) scale(${scale})`
   const background={
-    id:uid('ui-screen'),name:payload.title||'UI Studio screen',type:'image',tag:'image',parentId:null,order:0,
+    id:uid('ui-screen'),name:payload.title||'UI Studio screen',type:'screenCrop',parentId:null,order:0,
     baseTransform:base,transform:defaultTransform(),motion:defaultMotion(false),appearance:defaultAppearance(),keyframes:[],
-    original:null,attrs:{href,x:'0',y:'0',width:String(w),height:String(h),preserveAspectRatio:'none'},
+    original:null,attrs:{},
+    screenCrop:{
+      x:Number(sourceCrop.x)||0,y:Number(sourceCrop.y)||0,
+      width:Number(sourceCrop.width)||w,height:Number(sourceCrop.height)||h,
+      sourceWidth:sourceW,sourceHeight:sourceH,href
+    },
     prototype:focusProto(),sourceMeta:{fileKey:payload.fileKey,nodeId:payload.nodeId,deepLink:payload.deepLink}
   }
   const focusables=(payload.focusables||[]).map((f,i)=>({
     id:uid('focus'),name:f.name||`Focus ${i+1}`,type:'focusCrop',parentId:null,order:i+1,
     baseTransform:base,transform:defaultTransform(),motion:defaultMotion(false),appearance:defaultAppearance(),keyframes:[],
     attrs:{},original:null,
-    crop:{x:Number(f.x)||0,y:Number(f.y)||0,width:Number(f.width)||1,height:Number(f.height)||1,screenWidth:w,screenHeight:h,href},
+    crop:{
+      x:Number(f.x)||0,y:Number(f.y)||0,width:Number(f.width)||1,height:Number(f.height)||1,
+      sourceX:(Number(sourceCrop.x)||0)+(Number(f.x)||0),
+      sourceY:(Number(sourceCrop.y)||0)+(Number(f.y)||0),
+      sourceWidth:sourceW,sourceHeight:sourceH,href
+    },
     prototype:focusProto({focusable:true,focusId:f.id||`focus-${i+1}`,scale:null,autoDetected:true,confidence:f.confidence||'medium',reason:f.reason||'UI Studio auto detection',nodeType:f.nodeType||'FRAME'})
   }))
   return [background,...focusables]
