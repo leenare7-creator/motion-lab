@@ -16,6 +16,11 @@ export function normalizeAnalysis(raw={},asset={}){
     caution:raw.caution||'원형을 해치지 않는 범위에서 움직임을 적용합니다.',
     summary:raw.summary||'형태를 유지하면서 짧고 명확한 움직임이 잘 맞는 그래픽입니다.',
     traits:Array.isArray(raw.traits)?raw.traits.slice(0,5):[],
+    parts:Array.isArray(raw.parts)?raw.parts.slice(0,6).map(p=>({
+      name:String(p?.name||'part'),
+      role:String(p?.role||'detail'),
+      importance:clamp(Number(p?.importance)||.5,0,1),
+    })):[],
   }
 }
 
@@ -38,6 +43,8 @@ export function normalizeIdea(raw={},fallbackRecipe='soft-pop'){
       layerStrategy:plan.layerStrategy||'whole',
       stagger:Number(plan.stagger)||.08,
       easing:plan.easing||'spring',
+      targetLayerNames:Array.isArray(plan.targetLayerNames)?plan.targetLayerNames.filter(Boolean).slice(0,8):[],
+      accentLayerNames:Array.isArray(plan.accentLayerNames)?plan.accentLayerNames.filter(Boolean).slice(0,4):[],
     }
   }
 }
