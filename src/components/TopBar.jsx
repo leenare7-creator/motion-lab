@@ -4,7 +4,11 @@ export default function TopBar({ lab, onExport, onShare }) {
   const [historyOpen,setHistoryOpen]=useState(false)
   return <header className="topbar">
     <div className="brand"><div className="figma-mark">M</div><strong>Motion Lab</strong></div>
-    <div className="crumb">Drafts / <b>Bookmark motion</b></div>
+    <div className="crumb">Drafts / <b>{lab.editorMode==='prototype'?'IPTV Focus Prototype':'Bookmark motion'}</b></div>
+    <div className="mode-switch">
+      <button className={lab.editorMode==='animate'?'active':''} onClick={()=>lab.setEditorMode('animate')}>Animate</button>
+      <button className={lab.editorMode==='prototype'?'active':''} onClick={()=>lab.setEditorMode('prototype')}>Prototype</button>
+    </div>
     <div className="top-spacer" />
     <div className="history-controls">
       <button className="icon-btn" disabled={!lab.canUndo} title={lab.canUndo?`Undo: ${lab.undoLabel} · ⌘Z`:'Nothing to undo'} onClick={lab.undo}>↶</button>
