@@ -59,20 +59,30 @@ export default function SvgScene({ lab, registerRef }) {
       transition:`transform ${isPressed?90:lab.focusSettings.duration}ms ${lab.focusSettings.easing}, filter ${lab.focusSettings.duration}ms ${lab.focusSettings.easing}`,
       filter:isFocused?'drop-shadow(0 10px 18px rgba(0,0,0,.24))':'none'
     } : undefined
-    const content = layer.type === 'focusCrop'
+    const content = layer.type === 'screenCrop'
       ? (() => {
-          const crop=layer.crop
+          const crop=layer.screenCrop
           if(!crop)return null
-          return <>
-            <rect x={crop.x} y={crop.y} width={crop.width} height={crop.height} fill="transparent" pointerEvents="all"/>
-            <svg x={crop.x} y={crop.y} width={crop.width} height={crop.height}
-              viewBox={`${crop.x} ${crop.y} ${crop.width} ${crop.height}`} overflow="hidden">
-              <image href={crop.href} x="0" y="0" width={crop.screenWidth} height={crop.screenHeight}
-                preserveAspectRatio="none" opacity={isFocused?1:0}/>
-            </svg>
-          </>
+          return <svg x="0" y="0" width={crop.width} height={crop.height}
+            viewBox={`${crop.x} ${crop.y} ${crop.width} ${crop.height}`} overflow="hidden">
+            <image href={crop.href} x="0" y="0" width={crop.sourceWidth} height={crop.sourceHeight}
+              preserveAspectRatio="none"/>
+          </svg>
         })()
-      : layer.type === 'shape' || layer.type === 'text' || layer.type === 'image'
+      : layer.type === 'focusCrop'
+        ? (() => {
+            const crop=layer.crop
+            if(!crop)return null
+            return <>
+              <rect x={crop.x} y={crop.y} width={crop.width} height={crop.height} fill="transparent" pointerEvents="all"/>
+              <svg x={crop.x} y={crop.y} width={crop.width} height={crop.height}
+                viewBox={`${crop.sourceX} ${crop.sourceY} ${crop.width} ${crop.height}`} overflow="hidden">
+                <image href={crop.href} x="0" y="0" width={crop.sourceWidth} height={crop.sourceHeight}
+                  preserveAspectRatio="none" opacity={isFocused?1:0}/>
+              </svg>
+            </>
+          })()
+        : layer.type === 'shape' || layer.type === 'text' || layer.type === 'image'
         ? createElement(layer.tag || (layer.type === 'image' ? 'image' : 'g'), leafProps(layer), layer.textContent || undefined)
         : children.map(c => <Node key={c.id} layer={c} />)
     return <g
