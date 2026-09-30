@@ -63,50 +63,17 @@ export default function SvgScene({ lab, registerRef }) {
       ? (() => {
           const crop=layer.screenCrop
           if(!crop)return null
-          return <foreignObject x="0" y="0" width={crop.width} height={crop.height}>
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{width:'100%',height:'100%',overflow:'hidden'}}>
-              <img
-                src={crop.href}
-                alt=""
-                style={{
-                  display:'block',
-                  width:`${crop.sourceWidth}px`,
-                  height:`${crop.sourceHeight}px`,
-                  maxWidth:'none',
-                  transform:`translate(${-crop.x}px, ${-crop.y}px)`,
-                  transformOrigin:'top left'
-                }}
-              />
-            </div>
-          </foreignObject>
+          return <rect x="0" y="0" width={crop.width} height={crop.height} fill="transparent" pointerEvents="none"/>
         })()
       : layer.type === 'focusCrop'
         ? (() => {
             const crop=layer.crop
             if(!crop)return null
-            return <>
-              <rect x={crop.x} y={crop.y} width={crop.width} height={crop.height} fill="transparent" pointerEvents="all"/>
-              <foreignObject x={crop.x} y={crop.y} width={crop.width} height={crop.height}>
-                <div xmlns="http://www.w3.org/1999/xhtml" style={{width:'100%',height:'100%',overflow:'hidden',opacity:isFocused?1:0}}>
-                  <img
-                    src={crop.href}
-                    alt=""
-                    style={{
-                      display:'block',
-                      width:`${crop.sourceWidth}px`,
-                      height:`${crop.sourceHeight}px`,
-                      maxWidth:'none',
-                      transform:`translate(${-crop.sourceX}px, ${-crop.sourceY}px)`,
-                      transformOrigin:'top left'
-                    }}
-                  />
-                </div>
-              </foreignObject>
-            </>
+            return <rect x={crop.x} y={crop.y} width={crop.width} height={crop.height} fill="transparent" pointerEvents="all"/>
           })()
         : layer.type === 'shape' || layer.type === 'text' || layer.type === 'image'
-        ? createElement(layer.tag || (layer.type === 'image' ? 'image' : 'g'), leafProps(layer), layer.textContent || undefined)
-        : children.map(c => <Node key={c.id} layer={c} />)
+          ? createElement(layer.tag || (layer.type === 'image' ? 'image' : 'g'), leafProps(layer), layer.textContent || undefined)
+          : children.map(c => <Node key={c.id} layer={c} />)
     return <g
       ref={el => registerRef(layer.id, el)}
       data-layer-id={layer.id}
