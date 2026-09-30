@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react'
 
-const icon = type => ({ svgRoot:'◇', userGroup:'▾', group:'▾', image:'▧', text:'T', shape:'◆' }[type] || '•')
-const typeLabel = type => ({ svgRoot:'SVG', userGroup:'GROUP', group:'GROUP', image:'IMAGE', text:'TEXT', shape:'PATH' }[type] || type?.toUpperCase())
+const icon = type => ({ svgRoot:'◇', userGroup:'▾', group:'▾', image:'▧', text:'T', shape:'◆', focusCrop:'▭' }[type] || '•')
+const typeLabel = type => ({ svgRoot:'SVG', userGroup:'GROUP', group:'GROUP', image:'IMAGE', text:'TEXT', shape:'PATH', focusCrop:'FOCUS' }[type] || type?.toUpperCase())
 
 export default function LayersPanel({ lab, onPaste }) {
   const fileRef = useRef(null)
