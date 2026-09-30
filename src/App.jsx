@@ -9,11 +9,13 @@ import PrototypeInspector from './components/PrototypeInspector'
 import Timeline from './components/Timeline'
 import PasteDialog from './components/PasteDialog'
 import ExportDialog from './components/ExportDialog'
+import AiMotionStudio from './components/AiMotionStudio'
 
 export default function App(){
   const lab=useMotionLab()
   const [pasteOpen,setPasteOpen]=useState(false)
   const [exportOpen,setExportOpen]=useState(false)
+  const [workspace,setWorkspace]=useState('easy')
   const [desktopOnly,setDesktopOnly]=useState(false)
 
   useEffect(()=>{
@@ -37,6 +39,7 @@ export default function App(){
     try{
       const payload=JSON.parse(decodeURIComponent(window.location.hash.slice(prefix.length)))
       lab.importUiStudioPayload(payload)
+      setWorkspace('advanced')
       history.replaceState(null,'',window.location.pathname+window.location.search)
     }catch(e){
       lab.notify('UI Studio 화면 데이터를 읽지 못했습니다.')
@@ -70,8 +73,25 @@ export default function App(){
     </div>
   }
 
+  if(workspace==='easy'){
+    return <>
+      <AiMotionStudio
+        lab={lab}
+        onAdvanced={()=>setWorkspace('advanced')}
+        onExport={()=>setExportOpen(true)}
+      />
+      <ExportDialog open={exportOpen} onClose={()=>setExportOpen(false)} lab={lab}/>
+      {lab.toast&&<div className="toast show">{lab.toast}</div>}
+    </>
+  }
+
   return <div className="app">
-    <TopBar lab={lab} onExport={()=>setExportOpen(true)} onShare={()=>navigator.clipboard?.writeText(location.href).then(()=>lab.notify('링크를 복사했습니다.'))} />
+    <TopBar
+      lab={lab}
+      onEasy={()=>setWorkspace('easy')}
+      onExport={()=>setExportOpen(true)}
+      onShare={()=>navigator.clipboard?.writeText(location.href).then(()=>lab.notify('링크를 복사했습니다.'))}
+    />
     <div className="editor-shell">
       <ToolRail />
       <LayersPanel lab={lab} onPaste={()=>setPasteOpen(true)} />

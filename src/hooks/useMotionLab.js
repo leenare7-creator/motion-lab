@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cloneProps, propsAtTime } from '../lib/animation'
 import { createRasterLayer, defaultAppearance, defaultBookmarkSvg, defaultMotion, defaultTransform, importSvg, uid } from '../lib/svgImport'
 import { useCommandHistory } from './useCommandHistory'
+import { buildRecipeKeyframes, getMotionRecipe } from '../lib/motionRecipes'
 
 const EPS = .04
 
@@ -87,7 +88,7 @@ export function useMotionLab() {
   const [playing, setPlaying] = useState(true)
   const [loop, setLoop] = useState(true)
   const [speed, setSpeed] = useState(1)
-  const [duration] = useState(2)
+  const [duration,setDuration] = useState(2)
   const [theme, setTheme] = useState('tomato')
   const [sparks, setSparks] = useState(true)
   const [editorMode,setEditorMode]=useState('animate')
@@ -311,6 +312,39 @@ export function useMotionLab() {
     notify('이미지를 추가했습니다.')
   }, [childrenOf, notify, applyLayers])
 
+  const replaceWithSvg = useCallback((text,name='SVG')=>{
+    try{
+      const incoming=importSvg(text,0,name).map(l=>({...l,prototype:l.prototype||focusProto()}))
+      applyLayers('Open asset',()=>incoming)
+      setSelectedId(incoming[0]?.id||null)
+      setFocusedId(null);setSourceContext(null);setEditorMode('animate');setTheme('graphite');setTime(0);setPlaying(true)
+      return incoming[0]?.id||null
+    }catch(e){notify(e instanceof Error?e.message:'SVG를 불러오지 못했습니다.');return null}
+  },[applyLayers,notify])
+
+  const replaceWithRaster = useCallback((dataUrl,name='Image')=>{
+    const layer={...createRasterLayer(dataUrl,name,0),prototype:focusProto()}
+    applyLayers('Open asset',()=>[layer])
+    setSelectedId(layer.id)
+    setFocusedId(null);setSourceContext(null);setEditorMode('animate');setTheme('graphite');setTime(0);setPlaying(true)
+    return layer.id
+  },[applyLayers])
+
+  const applyMotionRecipe = useCallback((recipeId,intensity=1,targetId=null)=>{
+    const id=targetId||selectedId||layersRef.current.find(l=>l.parentId===null)?.id
+    const recipe=getMotionRecipe(recipeId)
+    if(!id||!recipe)return
+    const layer=layersRef.current.find(l=>l.id===id)
+    const opacity=layer?.appearance?.opacity ?? 1
+    const nextDuration=recipe.duration
+    const keyframes=buildRecipeKeyframes(recipeId,nextDuration,intensity,opacity).map(k=>({
+      id:uid('kf'),t:k.t,props:{transform:k.transform,motion:defaultMotion(false),opacity:k.opacity}
+    }))
+    setDuration(nextDuration)
+    applyLayers('Apply AI motion',prev=>prev.map(l=>l.id===id?{...l,motion:defaultMotion(false),keyframes}:l))
+    setSelectedId(id);setTime(0);setPlaying(true);setEditorMode('animate')
+  },[selectedId,applyLayers])
+
   const setLayerPrototype=useCallback((id,patch)=>replaceLayer(id,l=>({...l,prototype:{...focusProto(),...(l.prototype||{}),...patch,links:{...emptyLinks(),...(l.prototype?.links||{}),...(patch.links||{})}}}),'Edit focus behavior'),[replaceLayer])
   const setFocusLink=useCallback((id,dir,targetId)=>setLayerPrototype(id,{links:{[dir]:targetId}}),[setLayerPrototype])
   const updateFocusSetting=useCallback((key,value)=>setFocusSettings(s=>({...s,[key]:value})),[])
@@ -339,9 +373,9 @@ export function useMotionLab() {
 
   return {
     layers, selected, selectedId, setSelectedId, childrenOf, descendantsOf, isGroup,
-    time, setTime, playing, setPlaying, loop, setLoop, speed, setSpeed, duration, theme, setTheme, sparks, setSparks,
+    time, setTime, playing, setPlaying, loop, setLoop, speed, setSpeed, duration, setDuration, theme, setTheme, sparks, setSparks,
     snapshots, addSnapshot, toast, notify, currentProps, updateTimed, addKeyframe, deleteKeyframe, moveKeyframe,
-    updateAppearance, replaceLayer, reparent, reorderNear, addGroup, deleteSelected, importSvgText, importRaster, exportJson,
+    updateAppearance, replaceLayer, reparent, reorderNear, addGroup, deleteSelected, importSvgText, importRaster, replaceWithSvg, replaceWithRaster, applyMotionRecipe, exportJson,
     beginTransaction, commitTransaction, cancelTransaction,
     undo, redo, canUndo:history.canUndo, canRedo:history.canRedo, undoLabel:history.undoLabel, redoLabel:history.redoLabel,
     undoDepth:history.undoDepth, redoDepth:history.redoDepth, historyEntries:history.historyEntries,
