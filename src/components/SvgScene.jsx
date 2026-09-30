@@ -63,11 +63,22 @@ export default function SvgScene({ lab, registerRef }) {
       ? (() => {
           const crop=layer.screenCrop
           if(!crop)return null
-          return <svg x="0" y="0" width={crop.width} height={crop.height}
-            viewBox={`${crop.x} ${crop.y} ${crop.width} ${crop.height}`} overflow="hidden">
-            <image href={crop.href} x="0" y="0" width={crop.sourceWidth} height={crop.sourceHeight}
-              preserveAspectRatio="none" crossOrigin="anonymous"/>
-          </svg>
+          return <foreignObject x="0" y="0" width={crop.width} height={crop.height}>
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{width:'100%',height:'100%',overflow:'hidden'}}>
+              <img
+                src={crop.href}
+                alt=""
+                style={{
+                  display:'block',
+                  width:`${crop.sourceWidth}px`,
+                  height:`${crop.sourceHeight}px`,
+                  maxWidth:'none',
+                  transform:`translate(${-crop.x}px, ${-crop.y}px)`,
+                  transformOrigin:'top left'
+                }}
+              />
+            </div>
+          </foreignObject>
         })()
       : layer.type === 'focusCrop'
         ? (() => {
@@ -75,19 +86,22 @@ export default function SvgScene({ lab, registerRef }) {
             if(!crop)return null
             return <>
               <rect x={crop.x} y={crop.y} width={crop.width} height={crop.height} fill="transparent" pointerEvents="all"/>
-              <svg x={crop.x} y={crop.y} width={crop.width} height={crop.height}
-                viewBox={`0 0 ${crop.width} ${crop.height}`} overflow="hidden">
-                <image
-                  href={crop.href}
-                  x={-crop.sourceX}
-                  y={-crop.sourceY}
-                  width={crop.sourceWidth}
-                  height={crop.sourceHeight}
-                  preserveAspectRatio="none"
-                  crossOrigin="anonymous"
-                  opacity={isFocused?1:0}
-                />
-              </svg>
+              <foreignObject x={crop.x} y={crop.y} width={crop.width} height={crop.height}>
+                <div xmlns="http://www.w3.org/1999/xhtml" style={{width:'100%',height:'100%',overflow:'hidden',opacity:isFocused?1:0}}>
+                  <img
+                    src={crop.href}
+                    alt=""
+                    style={{
+                      display:'block',
+                      width:`${crop.sourceWidth}px`,
+                      height:`${crop.sourceHeight}px`,
+                      maxWidth:'none',
+                      transform:`translate(${-crop.sourceX}px, ${-crop.sourceY}px)`,
+                      transformOrigin:'top left'
+                    }}
+                  />
+                </div>
+              </foreignObject>
             </>
           })()
         : layer.type === 'shape' || layer.type === 'text' || layer.type === 'image'
