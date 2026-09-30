@@ -24,6 +24,8 @@ export function normalizeMotionPlan(input={}){
     layerStrategy:['whole','stagger-children','accent-first'].includes(input.layerStrategy)?input.layerStrategy:'whole',
     stagger:clamp(Number(input.stagger)||.08,0,.24),
     easing:input.easing||'spring',
+    targetLayerNames:Array.isArray(input.targetLayerNames)?input.targetLayerNames.filter(Boolean).slice(0,8):[],
+    accentLayerNames:Array.isArray(input.accentLayerNames)?input.accentLayerNames.filter(Boolean).slice(0,4):[],
   }
 }
 
