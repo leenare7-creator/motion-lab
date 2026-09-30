@@ -4,6 +4,18 @@ import { createRasterLayer, defaultAppearance, defaultBookmarkSvg, defaultMotion
 import { useCommandHistory } from './useCommandHistory'
 
 const EPS = .04
+
+async function imageUrlToDataUrl(url){
+  const res=await fetch(url,{mode:'cors',cache:'no-store'})
+  if(!res.ok) throw new Error(`화면 이미지를 불러오지 못했습니다. (${res.status})`)
+  const blob=await res.blob()
+  return await new Promise((resolve,reject)=>{
+    const reader=new FileReader()
+    reader.onload=()=>resolve(reader.result)
+    reader.onerror=()=>reject(new Error('화면 이미지를 변환하지 못했습니다.'))
+    reader.readAsDataURL(blob)
+  })
+}
 const emptyLinks=()=>({up:null,down:null,left:null,right:null})
 const focusProto=(extra={})=>({focusable:false,focusId:'',scale:null,links:emptyLinks(),...extra})
 
@@ -315,15 +327,18 @@ export function useMotionLab() {
   const activateFocus=useCallback(()=>{if(!focusedId){notify('포커스 대상이 없습니다.');return}setPressedId(focusedId);setTimeout(()=>setPressedId(null),110);notify(`${layersRef.current.find(l=>l.id===focusedId)?.name||'Target'} · OK`)},[focusedId,notify])
   const addIptvDemo=useCallback(()=>{const start=childrenOf(null).length,cards=[...demoCard('Movie 01',245,210,start),...demoCard('Movie 02',410,210,start+1),...demoCard('Movie 03',575,210,start+2),...demoCard('Movie 04',245,335,start+3),...demoCard('Movie 05',410,335,start+4),...demoCard('Movie 06',575,335,start+5)],first=cards.find(x=>x.prototype?.focusable);applyLayers('Add IPTV focus demo',prev=>[...prev,...cards]);setTheme('mono');setEditorMode('prototype');setFocusedId(first?.id||null);setSelectedId(first?.id||null);notify('IPTV 포커스 데모를 추가했습니다.')},[childrenOf,applyLayers,notify])
 
-  const importUiStudioPayload=useCallback(payload=>{
+  const importUiStudioPayload=useCallback(async payload=>{
     try{
-      const next=uiStudioLayers(payload)
+      notify('UI Studio 화면을 불러오는 중입니다.')
+      // iOS Safari는 외부 이미지를 SVG <image>로 직접 넣을 때 정상 URL도 깨진 이미지로
+      // 표시할 수 있다. 먼저 fetch한 뒤 data URL로 바꿔 같은 문서 안의 리소스로 사용한다.
+      const sourceImageUrl=await imageUrlToDataUrl(payload.sourceImageUrl)
+      const localPayload={...payload,sourceImageUrl}
+      const next=uiStudioLayers(localPayload)
       applyLayers('Import UI Studio screen',()=>next)
       const first=next.find(l=>l.prototype?.focusable)
       setSourceContext({source:'ui-studio',title:payload.title||'IPTV screen',fileKey:payload.fileKey,nodeId:payload.nodeId,deepLink:payload.deepLink,detected:(payload.focusables||[]).length})
       setEditorMode('prototype');setTheme('mono');setPlaying(false);setTime(0)
-      // 소스 화면 자체를 먼저 검증할 수 있게 자동 포커스는 잡지 않는다.
-      // 잘못 검출된 focusCrop이 전체 화면을 덮어 원본이 다른 이미지처럼 보이는 문제를 방지한다.
       setFocusedId(null);setSelectedId(next[0]?.id||null)
       notify(first?`화면을 가져왔습니다. 포커스 후보 ${(payload.focusables||[]).length}개를 확인하세요.`:'화면을 가져왔지만 자동 포커스 후보를 찾지 못했습니다.')
     }catch(e){notify(e instanceof Error?e.message:'UI Studio 가져오기 실패')}
