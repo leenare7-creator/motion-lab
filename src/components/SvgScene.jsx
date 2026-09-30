@@ -63,17 +63,28 @@ export default function SvgScene({ lab, registerRef }) {
       ? (() => {
           const crop=layer.screenCrop
           if(!crop)return null
-          return <rect x="0" y="0" width={crop.width} height={crop.height} fill="transparent" pointerEvents="none"/>
+          return <svg x="0" y="0" width={crop.width} height={crop.height}
+            viewBox={`${crop.x} ${crop.y} ${crop.width} ${crop.height}`} overflow="hidden">
+            <image href={crop.href} x="0" y="0" width={crop.sourceWidth} height={crop.sourceHeight}
+              preserveAspectRatio="none"/>
+          </svg>
         })()
       : layer.type === 'focusCrop'
         ? (() => {
             const crop=layer.crop
             if(!crop)return null
-            return <rect x={crop.x} y={crop.y} width={crop.width} height={crop.height} fill="transparent" pointerEvents="all"/>
+            return <>
+              <rect x={crop.x} y={crop.y} width={crop.width} height={crop.height} fill="transparent" pointerEvents="all"/>
+              <svg x={crop.x} y={crop.y} width={crop.width} height={crop.height}
+                viewBox={`${crop.sourceX} ${crop.sourceY} ${crop.width} ${crop.height}`} overflow="hidden">
+                <image href={crop.href} x="0" y="0" width={crop.sourceWidth} height={crop.sourceHeight}
+                  preserveAspectRatio="none" opacity={isFocused?1:0}/>
+              </svg>
+            </>
           })()
         : layer.type === 'shape' || layer.type === 'text' || layer.type === 'image'
-          ? createElement(layer.tag || (layer.type === 'image' ? 'image' : 'g'), leafProps(layer), layer.textContent || undefined)
-          : children.map(c => <Node key={c.id} layer={c} />)
+        ? createElement(layer.tag || (layer.type === 'image' ? 'image' : 'g'), leafProps(layer), layer.textContent || undefined)
+        : children.map(c => <Node key={c.id} layer={c} />)
     return <g
       ref={el => registerRef(layer.id, el)}
       data-layer-id={layer.id}
