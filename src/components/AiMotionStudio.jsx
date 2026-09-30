@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import CanvasStage from './CanvasStage'
 import { getMotionRecipe } from '../lib/motionRecipes'
+import MotionIdeaPreview from './MotionIdeaPreview'
 import { suggestMotionIdeas, summarizeLayers } from '../lib/motionDirector'
 
 const readDataUrl=file=>new Promise((resolve,reject)=>{
@@ -229,12 +230,7 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
           const recipe=getMotionRecipe(idea.recipeId)
           return <button className="idea-card" key={idea.recipeId+'-'+i} onClick={()=>chooseIdea(idea)}>
             <div className="idea-preview checker-soft">
-              <img
-                className={'idea-object '+recipe.previewClass}
-                style={{animationDuration:(idea.plan?.duration?Math.max(1.1,idea.plan.duration*1.9):1.4)+'s'}}
-                src={asset.previewDataUrl}
-                alt=""
-              />
+              <MotionIdeaPreview src={asset.previewDataUrl} idea={idea}/>
               <span className="idea-number">0{i+1}</span>
               <span className={'idea-lane-pill '+idea.lane.toLowerCase()}>{idea.lane}</span>
             </div>
