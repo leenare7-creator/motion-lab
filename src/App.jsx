@@ -14,6 +14,7 @@ export default function App(){
   const lab=useMotionLab()
   const [pasteOpen,setPasteOpen]=useState(false)
   const [exportOpen,setExportOpen]=useState(false)
+  const [mobilePane,setMobilePane]=useState('canvas')
   const bridgeImported=useRef(false)
 
   useEffect(()=>{
@@ -47,13 +48,19 @@ export default function App(){
 
   return <div className="app">
     <TopBar lab={lab} onExport={()=>setExportOpen(true)} onShare={()=>navigator.clipboard?.writeText(location.href).then(()=>lab.notify('링크를 복사했습니다.'))} />
-    <div className="editor-shell">
+    <div className={`editor-shell mobile-pane-${mobilePane}`}>
       <ToolRail />
       <LayersPanel lab={lab} onPaste={()=>setPasteOpen(true)} />
       <CanvasStage lab={lab} />
       {lab.editorMode==='prototype'?<PrototypeInspector lab={lab}/>:<Inspector lab={lab} />}
       <Timeline lab={lab} />
     </div>
+    <nav className="mobile-dock" aria-label="Mobile workspace">
+      <button className={mobilePane==='canvas'?'active':''} onClick={()=>setMobilePane('canvas')}><span>▣</span>Canvas</button>
+      <button className={mobilePane==='layers'?'active':''} onClick={()=>setMobilePane('layers')}><span>☷</span>Layers</button>
+      <button className={mobilePane==='inspector'?'active':''} onClick={()=>setMobilePane('inspector')}><span>◫</span>{lab.editorMode==='prototype'?'Focus':'Inspect'}</button>
+      <button className={mobilePane==='timeline'?'active':''} onClick={()=>setMobilePane('timeline')}><span>◇</span>Timeline</button>
+    </nav>
     <PasteDialog open={pasteOpen} onClose={()=>setPasteOpen(false)} lab={lab}/>
     <ExportDialog open={exportOpen} onClose={()=>setExportOpen(false)} lab={lab}/>
     {lab.toast&&<div className="toast show">{lab.toast}</div>}
