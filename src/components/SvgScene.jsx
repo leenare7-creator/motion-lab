@@ -66,7 +66,7 @@ export default function SvgScene({ lab, registerRef }) {
           return <>
             <rect x={crop.x} y={crop.y} width={crop.width} height={crop.height} fill="transparent" pointerEvents="all"/>
             <svg x={crop.x} y={crop.y} width={crop.width} height={crop.height}
-              viewBox={`${crop.x} ${crop.y} ${crop.width} ${crop.height}`} overflow="visible">
+              viewBox={`${crop.x} ${crop.y} ${crop.width} ${crop.height}`} overflow="hidden">
               <image href={crop.href} x="0" y="0" width={crop.screenWidth} height={crop.screenHeight}
                 preserveAspectRatio="none" opacity={isFocused?1:0}/>
             </svg>
