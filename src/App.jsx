@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useMotionLab } from './hooks/useMotionLab'
 import TopBar from './components/TopBar'
 import ToolRail from './components/ToolRail'
@@ -14,6 +14,21 @@ export default function App(){
   const lab=useMotionLab()
   const [pasteOpen,setPasteOpen]=useState(false)
   const [exportOpen,setExportOpen]=useState(false)
+  const bridgeImported=useRef(false)
+
+  useEffect(()=>{
+    if(bridgeImported.current)return
+    const prefix='#ui-studio='
+    if(!window.location.hash.startsWith(prefix))return
+    bridgeImported.current=true
+    try{
+      const payload=JSON.parse(decodeURIComponent(window.location.hash.slice(prefix.length)))
+      lab.importUiStudioPayload(payload)
+      history.replaceState(null,'',window.location.pathname+window.location.search)
+    }catch(e){
+      lab.notify('UI Studio 화면 데이터를 읽지 못했습니다.')
+    }
+  },[lab.importUiStudioPayload])
 
   useEffect(()=>{
     const onKeyDown=e=>{
