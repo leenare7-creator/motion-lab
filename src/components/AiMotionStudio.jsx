@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import CanvasStage from './CanvasStage'
 import { getMotionRecipe } from '../lib/motionRecipes'
-import { suggestMotionIdeas } from '../lib/motionDirector'
+import { suggestMotionIdeas, summarizeLayers } from '../lib/motionDirector'
 
 const readDataUrl=file=>new Promise((resolve,reject)=>{
   const r=new FileReader()
@@ -30,6 +30,13 @@ async function compactVisionImage(dataUrl,max=768){
   return canvas.toDataURL('image/png')
 }
 
+const prettyStrategy=value=>value==='stagger-children'?'layer stagger':value==='accent-first'?'accent first':'whole object'
+const prettyDirection=value=>value==='none'?'no travel':value||'no travel'
+const planMeta=idea=>{
+  const p=idea.plan||{}
+  return [p.duration?Math.round(p.duration*1000)+'ms':null,prettyStrategy(p.layerStrategy),prettyDirection(p.direction)].filter(Boolean).join(' · ')
+}
+
 export default function AiMotionStudio({lab,onAdvanced,onExport}){
   const inputRef=useRef(null)
   const [asset,setAsset]=useState(null)
@@ -44,11 +51,11 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
   useEffect(()=>{
     const onPaste=e=>{
       const file=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/')||f.type==='image/svg+xml')
-      if(file) openFile(file)
+      if(file)openFile(file)
     }
     window.addEventListener('paste',onPaste)
     return()=>window.removeEventListener('paste',onPaste)
-  })
+  },[])
 
   async function analyze(nextAsset,nextVariation=variation){
     setPhase('analyzing')
@@ -67,23 +74,27 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
       lab.notify('SVG, PNG, JPG, WebP 파일을 사용해 주세요.')
       return
     }
+
     try{
-      let previewDataUrl,visionDataUrl,width=1,height=1
+      let previewDataUrl,visionDataUrl,width=1,height=1,opened
       if(isSvg){
         const text=await file.text()
         previewDataUrl=await readDataUrl(file)
         const meta=await imageMeta(previewDataUrl)
         width=meta.width;height=meta.height
         visionDataUrl=await compactVisionImage(previewDataUrl)
-        lab.replaceWithSvg(text,file.name)
+        opened=lab.replaceWithSvg(text,file.name)
       }else{
         previewDataUrl=await readDataUrl(file)
         const meta=await imageMeta(previewDataUrl)
         width=meta.width;height=meta.height
         visionDataUrl=await compactVisionImage(previewDataUrl)
-        lab.replaceWithRaster(previewDataUrl,file.name)
+        opened=lab.replaceWithRaster(previewDataUrl,file.name)
       }
-      const next={name:file.name,mime:isSvg?'image/svg+xml':file.type,width,height,previewDataUrl,visionDataUrl}
+
+      if(!opened)throw new Error('asset import failed')
+      const structure=summarizeLayers(opened.layers||[])
+      const next={name:file.name,mime:isSvg?'image/svg+xml':file.type,width,height,previewDataUrl,visionDataUrl,structure}
       setAsset(next)
       setIntensity(1)
       setVariation(0)
@@ -111,7 +122,7 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
   function chooseIdea(idea){
     setSelectedIdea(idea)
     setIntensity(1)
-    lab.applyMotionRecipe(idea.recipeId,1)
+    lab.applyMotionPlan(idea,1)
     lab.setSpeed(1)
     lab.setPlaying(true)
     setPhase('tune')
@@ -120,7 +131,7 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
   function updateIntensity(value){
     const v=Number(value)
     setIntensity(v)
-    if(selectedIdea)lab.applyMotionRecipe(selectedIdea.recipeId,v)
+    if(selectedIdea)lab.applyMotionPlan(selectedIdea,v)
   }
 
   async function regenerate(){
@@ -147,10 +158,10 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
     <main className="ai-hero">
       <div className="ai-kicker">✦ AI MOTION DIRECTOR</div>
       <h1>Make it move.</h1>
-      <p>이미지 하나만 넣으세요. AI가 형태와 분위기를 읽고 서로 다른 모션 3가지를 제안합니다.</p>
+      <p>아이콘이나 일러스트 하나만 넣으세요. 형태와 레이어 구조를 읽고 서로 다른 모션 3가지를 제안합니다.</p>
       <div className="ai-drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();openFile(e.dataTransfer.files?.[0])}}>
         <div className="ai-drop-icon">↗</div>
-        <strong>Drop an image, SVG, or illustration</strong>
+        <strong>Drop an icon, SVG, or illustration</strong>
         <span>SVG · PNG · JPG · WebP</span>
         <div className="ai-drop-actions">
           <button className="ai-primary" onClick={()=>inputRef.current?.click()}>Choose file</button>
@@ -159,9 +170,9 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
         <input ref={inputRef} hidden type="file" accept=".svg,image/png,image/jpeg,image/webp" onChange={e=>openFile(e.target.files?.[0])}/>
       </div>
       <div className="ai-promise">
-        <span><b>01</b> AI understands the asset</span>
-        <span><b>02</b> 3 distinct ideas</span>
-        <span><b>03</b> Tune only speed & intensity</span>
+        <span><b>01</b> 형태와 레이어 구조 분석</span>
+        <span><b>02</b> 성격이 다른 3개 방향 제안</span>
+        <span><b>03</b> Speed와 Motion만 조절</span>
       </div>
     </main>
   </div>
@@ -173,8 +184,12 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
       <div className="analysis-copy">
         <div className="ai-spinner">✦</div>
         <h2>Directing your motion…</h2>
-        <p>형태, 무게 중심, 방향성과 사용 맥락을 보고 있어요.</p>
-        <div className="analysis-steps"><span>Understanding shape</span><span>Finding motion opportunities</span><span>Directing 3 ideas</span></div>
+        <p>단순히 효과를 고르는 게 아니라, 이 그래픽이 어떻게 움직여야 자연스러운지 판단하고 있어요.</p>
+        <div className="analysis-steps">
+          <span>Reading silhouette & composition</span>
+          <span>Understanding layer structure</span>
+          <span>Composing 3 motion directions</span>
+        </div>
       </div>
     </main>
   </div>
@@ -184,33 +199,51 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
     <main className="ai-ideas">
       <div className="ai-ideas-heading">
         <div>
-          <div className="ai-kicker">3 IDEAS FOR {asset.name}</div>
-          <h2>어떤 느낌이 가장 맞아?</h2>
+          <div className="ai-kicker">MOTION DIRECTION FOR {asset.name}</div>
+          <h2>이 그래픽은 이렇게 읽었어.</h2>
           {analysis&&<p>{analysis.summary}</p>}
         </div>
         <div className="ai-analysis-tags">
-          {(analysis?.traits||[]).slice(0,4).map(t=><span key={t}>{t}</span>)}
-          <span className={directorSource==='ai'?'ai-source live':'ai-source'}>{directorSource==='ai'?'AI analyzed':'Smart preview'}</span>
+          {(analysis?.traits||[]).slice(0,5).map(t=><span key={t}>{t}</span>)}
+          <span className={directorSource==='ai'?'ai-source live':'ai-source'}>{directorSource==='ai'?'AI vision':'Local director'}</span>
         </div>
       </div>
+
+      {analysis&&<section className="director-read">
+        <div><span>Type</span><b>{analysis.category}</b></div>
+        <div><span>Composition</span><b>{analysis.composition}</b></div>
+        <div><span>Personality</span><b>{analysis.personality}</b></div>
+        <div><span>Structure</span><b>{analysis.complexity}</b></div>
+        <div className="director-read-wide"><span>Motion opportunity</span><b>{analysis.motionOpportunity}</b></div>
+        <div className="director-read-wide caution"><span>Keep in mind</span><b>{analysis.caution}</b></div>
+      </section>}
+
+      <div className="idea-section-title"><b>3 directions</b><span>셋 중 하나만 골라도 바로 쓸 수 있게 서로 다른 성격으로 구성했어요.</span></div>
       <div className="idea-grid">
         {ideas.map((idea,i)=>{
           const recipe=getMotionRecipe(idea.recipeId)
-          return <button className="idea-card" key={idea.recipeId} onClick={()=>chooseIdea(idea)}>
+          return <button className="idea-card" key={idea.recipeId+'-'+i} onClick={()=>chooseIdea(idea)}>
             <div className="idea-preview checker-soft">
-              <img className={'idea-object '+recipe.previewClass} src={asset.previewDataUrl} alt=""/>
+              <img
+                className={'idea-object '+recipe.previewClass}
+                style={{animationDuration:(idea.plan?.duration?Math.max(1.1,idea.plan.duration*1.9):1.4)+'s'}}
+                src={asset.previewDataUrl}
+                alt=""
+              />
               <span className="idea-number">0{i+1}</span>
+              <span className={'idea-lane-pill '+idea.lane.toLowerCase()}>{idea.lane}</span>
             </div>
             <div className="idea-card-copy">
-              <span className="idea-lane">{idea.lane||recipe.lane}</span>
+              <span className="idea-lane">{idea.motionIntent||recipe.lane}</span>
               <h3>{idea.title||recipe.name}</h3>
               <p>{idea.rationale||recipe.description}</p>
-              <span className="idea-choose">Choose this motion →</span>
+              <div className="idea-plan">{planMeta(idea)}</div>
+              <span className="idea-choose">이 방향으로 만들기 →</span>
             </div>
           </button>
         })}
       </div>
-      <button className="regenerate" onClick={regenerate}>↻ Generate 3 new directions</button>
+      <button className="regenerate" onClick={regenerate}>↻ 다른 방향 3개 다시 제안</button>
     </main>
   </div>
 
@@ -226,6 +259,13 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
         <span className="idea-lane">{selectedIdea.lane||recipe.lane}</span>
         <h2>{selectedIdea.title||recipe.name}</h2>
         <p>{selectedIdea.rationale||recipe.description}</p>
+
+        <div className="ai-plan-summary">
+          <span><small>Duration</small><b>{Math.round((selectedIdea.plan?.duration||recipe.duration)*1000)}ms</b></span>
+          <span><small>Layers</small><b>{prettyStrategy(selectedIdea.plan?.layerStrategy)}</b></span>
+          <span><small>Direction</small><b>{prettyDirection(selectedIdea.plan?.direction)}</b></span>
+        </div>
+
         <div className="simple-control">
           <div><b>Speed</b><span>{lab.speed.toFixed(1)}×</span></div>
           <input type="range" min=".6" max="1.6" step=".1" value={lab.speed} onChange={e=>lab.setSpeed(Number(e.target.value))}/>
@@ -237,8 +277,8 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
           <div className="control-ends"><span>Subtle</span><span>Bold</span></div>
         </div>
         <label className="loop-control"><span><b>Loop preview</b><small>계속 반복해서 확인</small></span><button className={'toggle '+(lab.loop?'on':'')} onClick={()=>lab.setLoop(!lab.loop)}><i/></button></label>
-        <button className="ai-secondary full" onClick={()=>{setPhase('ideas');lab.setPlaying(false)}}>← Back to 3 ideas</button>
-        <button className="advanced-link" onClick={onAdvanced}>Need more control? Open Advanced Editor</button>
+        <button className="ai-secondary full" onClick={()=>{setPhase('ideas');lab.setPlaying(false)}}>← 다른 아이디어 보기</button>
+        <button className="advanced-link" onClick={onAdvanced}>세밀하게 수정하기 · Advanced Editor</button>
       </aside>
     </main>
   </div>
