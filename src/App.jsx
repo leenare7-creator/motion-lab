@@ -15,6 +15,19 @@ export default function App(){
   const [pasteOpen,setPasteOpen]=useState(false)
   const [exportOpen,setExportOpen]=useState(false)
   const [mobilePane,setMobilePane]=useState('canvas')
+  const [desktopOnly,setDesktopOnly]=useState(false)
+
+  useEffect(()=>{
+    const detect=()=>{
+      const ua=navigator.userAgent||''
+      const isPhoneOrTablet=/iPhone|iPad|iPod|Android|Mobile/i.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)
+      const tooNarrow=window.matchMedia('(max-width: 900px)').matches
+      setDesktopOnly(isPhoneOrTablet||tooNarrow)
+    }
+    detect()
+    window.addEventListener('resize',detect)
+    return()=>window.removeEventListener('resize',detect)
+  },[])
   const bridgeImported=useRef(false)
 
   useEffect(()=>{
@@ -45,6 +58,18 @@ export default function App(){
     window.addEventListener('keydown',onKeyDown)
     return()=>window.removeEventListener('keydown',onKeyDown)
   },[lab.undo,lab.redo])
+
+  if(desktopOnly){
+    return <div className="desktop-only-screen">
+      <div className="desktop-only-card">
+        <div className="desktop-only-mark">M</div>
+        <h1>Motion Lab은 PC에서 사용할 수 있어요</h1>
+        <p>레이어 편집, 타임라인, 포커스 이동 검증은 넓은 화면과 마우스·키보드 환경을 기준으로 제공합니다.</p>
+        <div className="desktop-only-guide">PC에서 UI Studio를 열고 <b>Motion</b>을 선택해 다시 접속해 주세요.</div>
+        <a href="https://iptvuistudio.vercel.app">UI Studio로 돌아가기</a>
+      </div>
+    </div>
+  }
 
   return <div className="app">
     <TopBar lab={lab} onExport={()=>setExportOpen(true)} onShare={()=>navigator.clipboard?.writeText(location.href).then(()=>lab.notify('링크를 복사했습니다.'))} />
