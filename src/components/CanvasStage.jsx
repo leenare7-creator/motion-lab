@@ -13,29 +13,24 @@ export default function CanvasStage({ lab }) {
 
   const registerRef = (id, el) => { if (el) refs.current.set(id, el); else refs.current.delete(id) }
 
-  const measureBox = useCallback((id, scale=1) => {
+  const measureBox = useCallback((id) => {
     const node=refs.current.get(id), stage=stageRef.current
     if(!node||!stage)return null
     const r=node.getBoundingClientRect(), s=stage.getBoundingClientRect()
     if(r.width<2||r.height<2)return null
-    const w=r.width*scale,h=r.height*scale,dx=(w-r.width)/2,dy=(h-r.height)/2
-    return {left:r.left-s.left-dx,top:r.top-s.top-dy,width:w,height:h}
+    return {left:r.left-s.left,top:r.top-s.top,width:r.width,height:r.height}
   },[])
 
   useEffect(() => {
     const raf=requestAnimationFrame(()=>{
       setBox(lab.editorMode==='animate'?measureBox(lab.selectedId):null)
       if(lab.editorMode==='prototype'&&lab.focusedId){
-        const layer=lab.layers.find(x=>x.id===lab.focusedId)
-        const scale=layer?.prototype?.scale??lab.focusSettings.scale
-        setFocusBox(measureBox(lab.focusedId,scale))
+        setFocusBox(measureBox(lab.focusedId))
       }else setFocusBox(null)
     })
     const timer=setTimeout(()=>{
       if(lab.editorMode==='prototype'&&lab.focusedId){
-        const layer=lab.layers.find(x=>x.id===lab.focusedId)
-        const scale=layer?.prototype?.scale??lab.focusSettings.scale
-        setFocusBox(measureBox(lab.focusedId,scale))
+        setFocusBox(measureBox(lab.focusedId))
       }
     },lab.focusSettings.duration+24)
     return()=>{cancelAnimationFrame(raf);clearTimeout(timer)}
