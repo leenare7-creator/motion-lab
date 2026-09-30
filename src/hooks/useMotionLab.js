@@ -25,7 +25,9 @@ function uiStudioLayers(payload){
     screenCrop:{
       x:Number(sourceCrop.x)||0,y:Number(sourceCrop.y)||0,
       width:Number(sourceCrop.width)||w,height:Number(sourceCrop.height)||h,
-      sourceWidth:sourceW,sourceHeight:sourceH,href
+      sourceWidth:sourceW,sourceHeight:sourceH,href,
+      displayX:ox,displayY:oy,displayScale:scale,
+      displayWidth:w*scale,displayHeight:h*scale
     },
     prototype:focusProto(),sourceMeta:{fileKey:payload.fileKey,nodeId:payload.nodeId,deepLink:payload.deepLink}
   }
