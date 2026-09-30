@@ -322,8 +322,10 @@ export function useMotionLab() {
       const first=next.find(l=>l.prototype?.focusable)
       setSourceContext({source:'ui-studio',title:payload.title||'IPTV screen',fileKey:payload.fileKey,nodeId:payload.nodeId,deepLink:payload.deepLink,detected:(payload.focusables||[]).length})
       setEditorMode('prototype');setTheme('mono');setPlaying(false);setTime(0)
-      setFocusedId(first?.id||null);setSelectedId(first?.id||next[0]?.id||null)
-      notify(first?`UI Studio에서 포커스 후보 ${(payload.focusables||[]).length}개를 가져왔습니다.`:'화면은 가져왔지만 자동 포커스 후보를 찾지 못했습니다.')
+      // 소스 화면 자체를 먼저 검증할 수 있게 자동 포커스는 잡지 않는다.
+      // 잘못 검출된 focusCrop이 전체 화면을 덮어 원본이 다른 이미지처럼 보이는 문제를 방지한다.
+      setFocusedId(null);setSelectedId(next[0]?.id||null)
+      notify(first?`화면을 가져왔습니다. 포커스 후보 ${(payload.focusables||[]).length}개를 확인하세요.`:'화면을 가져왔지만 자동 포커스 후보를 찾지 못했습니다.')
     }catch(e){notify(e instanceof Error?e.message:'UI Studio 가져오기 실패')}
   },[applyLayers,notify])
 
