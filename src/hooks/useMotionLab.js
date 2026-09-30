@@ -341,7 +341,7 @@ export function useMotionLab() {
     const descendants=[]
     const walk=pid=>current.filter(l=>l.parentId===pid).sort((a,b)=>a.order-b.order).forEach(child=>{descendants.push(child);walk(child.id)})
     walk(id)
-    const leaves=descendants.filter(l=>['shape','text','image'].includes(l.type)).slice(0,12)
+    const leaves=descendants.filter(l=>['shape','text','image'].includes(l.type)).slice(0,18)
     const norm=v=>String(v||'').trim().toLowerCase()
     const namedMatches=(names=[])=>{
       const wanted=new Set(names.map(norm).filter(Boolean))
