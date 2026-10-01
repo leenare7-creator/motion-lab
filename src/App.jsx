@@ -11,6 +11,24 @@ import PasteDialog from './components/PasteDialog'
 import ExportDialog from './components/ExportDialog'
 import AiMotionStudio from './components/AiMotionStudio'
 
+const STUDIO_URL='https://iptvuistudio.vercel.app'
+
+function StudioDesktopSidebar(){
+  return <aside className="studio-desktop-sidebar">
+    <a className="studio-desktop-logo" href={STUDIO_URL}>Media UX Studio</a>
+    <nav className="studio-desktop-nav">
+      <a href={STUDIO_URL+'/design'}>Design</a>
+      <a href={STUDIO_URL+'/explore'}>Explore</a>
+      <a href={STUDIO_URL+'/review'}>Review</a>
+      <a href={STUDIO_URL+'/work'}>My Work</a>
+    </nav>
+    <div className="studio-desktop-tools">
+      <a href={STUDIO_URL+'/render-lab'}><i className="render-dot"/>Render Lab <span>›</span></a>
+      <a className="current" href="/"><i className="motion-dot"/>Motion Lab <span>›</span></a>
+    </div>
+  </aside>
+}
+
 export default function App(){
   const lab=useMotionLab()
   const [pasteOpen,setPasteOpen]=useState(false)
@@ -78,6 +96,7 @@ export default function App(){
 
   if(workspace==='easy'){
     return <>
+      <StudioDesktopSidebar/>
       <AiMotionStudio
         lab={lab}
         onAdvanced={()=>setWorkspace('advanced')}
@@ -88,7 +107,9 @@ export default function App(){
     </>
   }
 
-  return <div className="app">
+  return <>
+    <StudioDesktopSidebar/>
+    <div className="app studio-shifted-app">
     <TopBar
       lab={lab}
       onEasy={()=>setWorkspace('easy')}
@@ -106,4 +127,5 @@ export default function App(){
     <ExportDialog open={exportOpen} onClose={()=>setExportOpen(false)} lab={lab}/>
     {lab.toast&&<div className="toast show">{lab.toast}</div>}
   </div>
+  </>
 }
