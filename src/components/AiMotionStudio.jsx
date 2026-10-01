@@ -38,6 +38,28 @@ const planMeta=idea=>{
   return [p.duration?Math.round(p.duration*1000)+'ms':null,prettyStrategy(p.layerStrategy),prettyDirection(p.direction)].filter(Boolean).join(' · ')
 }
 
+const STUDIO_URL='https://iptvuistudio.vercel.app'
+
+function StudioMobileBar(){
+  const [open,setOpen]=useState(false)
+  const items=[['Design','/design'],['Explore','/explore'],['Review','/review'],['My Work','/work']]
+  return <div className={`studio-mobile-shell ${open?'open':''}`}>
+    <div className="studio-mobile-bar">
+      <a className="studio-mobile-brand" href={STUDIO_URL}>Media UX Studio</a>
+      <button type="button" className="studio-mobile-menu-button"
+        aria-label={open?'메뉴 닫기':'메뉴 열기'} aria-expanded={open}
+        onClick={()=>setOpen(v=>!v)}>{open?'✕':'☰'}</button>
+    </div>
+    {open&&<nav className="studio-mobile-menu">
+      {items.map(([label,path])=><a key={path} href={STUDIO_URL+path}>{label}</a>)}
+      <div className="studio-mobile-tools">
+        <a href={STUDIO_URL+'/render-lab'}><i className="render-dot"/>Render Lab <span>›</span></a>
+        <a className="current" href="/"><i className="motion-dot"/>Motion Lab <span>›</span></a>
+      </div>
+    </nav>}
+  </div>
+}
+
 export default function AiMotionStudio({lab,onAdvanced,onExport}){
   const inputRef=useRef(null)
   const [asset,setAsset]=useState(null)

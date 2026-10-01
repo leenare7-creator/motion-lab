@@ -162,3 +162,39 @@
   .loop-control{padding:15px 0}
   .advanced-link{display:none}
 }
+
+
+/* Media UX Studio continuity on mobile. Motion Lab remains standalone on desktop. */
+.studio-mobile-shell{display:none}
+@media(max-width:1023px){
+  .studio-mobile-shell{
+    display:block;position:sticky;top:0;z-index:50;width:100%;
+    border-bottom:1px solid #e5e7eb;background:rgba(255,255,255,.78);
+    -webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5)
+  }
+  .studio-mobile-shell.open{background:#fff}
+  .studio-mobile-bar{height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+  .studio-mobile-brand{color:#111827;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .studio-mobile-menu-button{
+    width:44px;height:44px;margin-right:-6px;border:0;border-radius:999px;background:transparent;
+    color:#374151;font-size:26px;line-height:1;display:grid;place-items:center
+  }
+  .studio-mobile-menu-button:active{background:#f3f4f6}
+  .studio-mobile-menu{display:flex;flex-direction:column;gap:4px;padding:0 16px 14px;background:#fff}
+  .studio-mobile-menu>a{
+    display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;
+    color:#4b5563;text-decoration:none;font-size:14px;font-weight:500
+  }
+  .studio-mobile-menu>a:active{background:#f3f4f6}
+  .studio-mobile-tools{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding-top:10px;border-top:1px solid #eee}
+  .studio-mobile-tools>a{
+    min-height:38px;display:flex;align-items:center;gap:9px;padding:0 12px;border:1px solid #e5e7eb;
+    border-radius:9px;color:#6b7280;text-decoration:none;font-size:11px;font-weight:600
+  }
+  .studio-mobile-tools>a.current{background:#fafafa;color:#374151}
+  .studio-mobile-tools a span{margin-left:auto;color:#d1d5db;font-size:12px}
+  .studio-mobile-tools i{width:6px;height:6px;border-radius:999px;display:block}
+  .studio-mobile-tools .render-dot{background:#9c8cf2}
+  .studio-mobile-tools .motion-dot{background:#74bdf0}
+  .ai-studio-header{top:68px}
+}
