@@ -54,6 +54,8 @@ export function normalizeDirectorResult(raw={},asset={}){
   return {
     version:DIRECTOR_VERSION,
     source:raw.source||'local',
+    provider:raw.provider||null,
+    model:raw.model||null,
     analysis:normalizeAnalysis(raw.analysis,asset),
     ideas:ideas.map((idea,i)=>normalizeIdea(idea,['soft-pop','float-settle','tilt-spring'][i])),
   }
