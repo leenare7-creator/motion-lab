@@ -48,6 +48,7 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
   const [intensity,setIntensity]=useState(1)
   const [variation,setVariation]=useState(0)
   const [directorSource,setDirectorSource]=useState(null)
+  const [directorProvider,setDirectorProvider]=useState(null)
 
   useEffect(()=>{
     const onPaste=e=>{
@@ -65,6 +66,7 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
     setAnalysis(result.analysis)
     setIdeas(result.ideas)
     setDirectorSource(result.source)
+    setDirectorProvider(result.provider||null)
     setPhase('ideas')
   }
 
@@ -206,7 +208,7 @@ export default function AiMotionStudio({lab,onAdvanced,onExport}){
         </div>
         <div className="ai-analysis-tags">
           {(analysis?.traits||[]).slice(0,5).map(t=><span key={t}>{t}</span>)}
-          <span className={directorSource==='ai'?'ai-source live':'ai-source'}>{directorSource==='ai'?'AI vision':'Local director'}</span>
+          <span className={directorSource==='ai'?'ai-source live':'ai-source'}>{directorSource==='ai'?(directorProvider==='anthropic'?'Claude Vision':directorProvider==='openai'?'OpenAI Vision':'AI Vision'):'Local director'}</span>
         </div>
       </div>
 
