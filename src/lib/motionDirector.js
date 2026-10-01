@@ -75,7 +75,7 @@ function localAnalysis(asset){
     caution:category==='logo'?'브랜드 실루엣을 변형하지 않고 짧은 시간 안에 종료합니다.':'형태 인지를 해치지 않도록 회전·이동량을 제한합니다.',
     summary:s.isLayered?'여러 파트가 분리된 벡터라 전체 움직임에 짧은 레이어 시차를 더하기 좋습니다.':'실루엣이 명확해 전체 오브젝트 중심의 짧은 모션이 잘 맞습니다.',
     traits:[category,composition,complexity,asset.mime?.includes('svg')?'vector':'raster'],
-    parts:(s.parts||[]).slice(0,6).map((p,i)=>({name:p.name,role:p.role||'detail',importance:i===0?.82:.58})),
+    parts:(s.parts||[]).slice(0,6).map((p,i)=>({name:p.name,role:p.role||'detail',importance:i===0 ? .82 : .58})),
   }
 }
 
