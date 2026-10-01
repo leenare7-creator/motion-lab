@@ -163,7 +163,7 @@ export default async function handler(req,res){
         'Content-Type':'application/json'
       },
       body:JSON.stringify({
-        model:process.env.OPENAI_MOTION_MODEL||'gpt-6-astra',
+        model:process.env.OPENAI_MOTION_MODEL||'gpt-6-luna',
         store:false,
         instructions:systemPrompt,
         input:[{role:'user',content}],
