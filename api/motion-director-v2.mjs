@@ -1,3 +1,5 @@
+import { completeMotionDirector, motionProviderStatus } from './_motion-provider.mjs'
+
 const RECIPES=['soft-pop','float-settle','snap-slide','tilt-spring','focus-pulse','reveal-up']
 
 const jsonSchema={
@@ -110,22 +112,17 @@ function bodyOf(req){
   return req.body
 }
 
-function outputText(data){
-  if(typeof data?.output_text==='string')return data.output_text
-  for(const item of data?.output||[]){
-    if(item?.type!=='message')continue
-    for(const part of item.content||[]){
-      if(part?.type==='output_text'&&typeof part.text==='string')return part.text
-    }
-  }
-  return ''
-}
-
 export default async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({error:'POST only'})
 
-  const key=process.env.OPENAI_API_KEY
-  if(!key)return res.status(503).json({error:'AI director is not configured'})
+  const providerStatus=motionProviderStatus()
+  if(!providerStatus.configured){
+    return res.status(503).json({
+      error:'AI director is not configured',
+      provider:providerStatus.provider,
+      model:providerStatus.model
+    })
+  }
 
   const body=bodyOf(req)
   const asset=body.asset||{}
@@ -152,43 +149,15 @@ export default async function handler(req,res){
     'Analyze the actual pixels and reconcile them with the supplied layer names. Then return three distinct motion directions.'
   ].join('\n')
 
-  const content=[{type:'input_text',text:prompt}]
-  if(image)content.push({type:'input_image',image_url:image,detail:'auto'})
-
   try{
-    const response=await fetch('https://api.openai.com/v1/responses',{
-      method:'POST',
-      headers:{
-        'Authorization':`Bearer ${key}`,
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({
-        model:process.env.OPENAI_MOTION_MODEL||'gpt-6-luna',
-        store:false,
-        instructions:systemPrompt,
-        input:[{role:'user',content}],
-        text:{
-          format:{
-            type:'json_schema',
-            name:'motion_director_v2',
-            strict:true,
-            schema:jsonSchema
-          }
-        },
-        max_output_tokens:1600
-      })
+    const result=await completeMotionDirector({
+      systemPrompt,
+      prompt,
+      image,
+      jsonSchema,
+      maxOutputTokens:1600,
     })
-
-    if(!response.ok){
-      const detail=await response.text()
-      return res.status(502).json({error:'OpenAI request failed',status:response.status,detail:detail.slice(0,500)})
-    }
-
-    const data=await response.json()
-    const text=outputText(data)
-    if(!text)return res.status(502).json({error:'AI director returned no output'})
-
-    const parsed=JSON.parse(text)
+    const parsed=result.parsed
     const ids=parsed.ideas?.map(x=>x.recipeId)||[]
     const lanes=parsed.ideas?.map(x=>x.lane)||[]
     const laneSet=new Set(lanes)
@@ -201,7 +170,7 @@ export default async function handler(req,res){
       return res.status(502).json({error:'AI director returned invalid direction set'})
     }
 
-    return res.status(200).json({source:'ai',analysis:parsed.analysis,ideas:parsed.ideas})
+    return res.status(200).json({source:'ai',provider:result.provider,model:result.model,analysis:parsed.analysis,ideas:parsed.ideas})
   }catch(e){
     return res.status(500).json({error:e instanceof Error?e.message:'AI director failed'})
   }
