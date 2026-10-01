@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cloneProps, propsAtTime } from '../lib/animation'
 import { createRasterLayer, defaultAppearance, defaultBookmarkSvg, defaultMotion, defaultTransform, importSvg, uid } from '../lib/svgImport'
 import { useCommandHistory } from './useCommandHistory'
-import { buildRecipeKeyframes, getMotionRecipe } from '../lib/motionRecipes'
+import { buildMotionPlanKeyframes, getMotionRecipe, normalizeMotionPlan } from '../lib/motionRecipes'
 
 const EPS = .04
 
@@ -318,7 +318,7 @@ export function useMotionLab() {
       applyLayers('Open asset',()=>incoming)
       setSelectedId(incoming[0]?.id||null)
       setFocusedId(null);setSourceContext(null);setEditorMode('animate');setTheme('graphite');setTime(0);setPlaying(true)
-      return incoming[0]?.id||null
+      return {rootId:incoming[0]?.id||null,layers:incoming}
     }catch(e){notify(e instanceof Error?e.message:'SVG를 불러오지 못했습니다.');return null}
   },[applyLayers,notify])
 
@@ -327,23 +327,73 @@ export function useMotionLab() {
     applyLayers('Open asset',()=>[layer])
     setSelectedId(layer.id)
     setFocusedId(null);setSourceContext(null);setEditorMode('animate');setTheme('graphite');setTime(0);setPlaying(true)
-    return layer.id
+    return {rootId:layer.id,layers:[layer]}
   },[applyLayers])
 
-  const applyMotionRecipe = useCallback((recipeId,intensity=1,targetId=null)=>{
+  const applyMotionPlan = useCallback((idea,intensity=1,targetId=null)=>{
     const id=targetId||selectedId||layersRef.current.find(l=>l.parentId===null)?.id
-    const recipe=getMotionRecipe(recipeId)
-    if(!id||!recipe)return
-    const layer=layersRef.current.find(l=>l.id===id)
-    const opacity=layer?.appearance?.opacity ?? 1
-    const nextDuration=recipe.duration
-    const keyframes=buildRecipeKeyframes(recipeId,nextDuration,intensity,opacity).map(k=>({
-      id:uid('kf'),t:k.t,props:{transform:k.transform,motion:defaultMotion(false),opacity:k.opacity}
+    if(!id)return
+    const plan=normalizeMotionPlan(idea?.plan||{recipeId:idea?.recipeId||'soft-pop'})
+    const current=layersRef.current
+    const root=current.find(l=>l.id===id)
+    if(!root)return
+
+    const descendants=[]
+    const walk=pid=>current.filter(l=>l.parentId===pid).sort((a,b)=>a.order-b.order).forEach(child=>{descendants.push(child);walk(child.id)})
+    walk(id)
+    const leaves=descendants.filter(l=>['shape','text','image'].includes(l.type)).slice(0,18)
+    const norm=v=>String(v||'').trim().toLowerCase()
+    const namedMatches=(names=[])=>{
+      const wanted=new Set(names.map(norm).filter(Boolean))
+      if(!wanted.size)return []
+      return leaves.filter(l=>{
+        const n=norm(l.name)
+        if(wanted.has(n))return true
+        for(const w of wanted)if(n.includes(w)||w.includes(n))return true
+        return false
+      })
+    }
+
+    const semanticTargets=namedMatches(plan.targetLayerNames)
+    const semanticAccents=namedMatches(plan.accentLayerNames)
+    let targets=[root]
+
+    if(plan.layerStrategy==='stagger-children'){
+      targets=semanticTargets.length>=2?semanticTargets:(leaves.length>=2?leaves.slice(0,6):[root])
+    }else if(plan.layerStrategy==='accent-first'){
+      const base=semanticTargets.length>=2?semanticTargets:(leaves.length>=2?leaves.slice(0,6):[root])
+      const accents=semanticAccents.length?semanticAccents:base.slice(0,1)
+      targets=[...accents,...base.filter(x=>!accents.some(a=>a.id===x.id))].slice(0,6)
+    }
+
+    const targetIds=new Set(targets.map(l=>l.id))
+    const delayFor=layer=>{
+      const idx=targets.findIndex(t=>t.id===layer.id)
+      if(idx<0)return 0
+      if(plan.layerStrategy==='accent-first')return idx===0?0:.08+(idx-1)*plan.stagger
+      return idx*plan.stagger
+    }
+    const maxDelay=Math.max(0,...targets.map(delayFor))
+    setDuration(plan.duration+maxDelay)
+
+    applyLayers('Apply AI motion plan',prev=>prev.map(layer=>{
+      if(!targetIds.has(layer.id)){
+        return layer.keyframes?.length?{...layer,keyframes:[]}:layer
+      }
+      const opacity=layer.appearance?.opacity ?? 1
+      const keyframes=buildMotionPlanKeyframes(plan,intensity,opacity,delayFor(layer)).map(k=>({
+        id:uid('kf'),t:k.t,props:{transform:k.transform,motion:defaultMotion(false),opacity:k.opacity}
+      }))
+      return {...layer,motion:defaultMotion(false),keyframes}
     }))
-    setDuration(nextDuration)
-    applyLayers('Apply AI motion',prev=>prev.map(l=>l.id===id?{...l,motion:defaultMotion(false),keyframes}:l))
+
     setSelectedId(id);setTime(0);setPlaying(true);setEditorMode('animate')
   },[selectedId,applyLayers])
+
+  const applyMotionRecipe = useCallback((recipeId,intensity=1,targetId=null)=>{
+    const recipe=getMotionRecipe(recipeId)
+    applyMotionPlan({recipeId,plan:{recipeId,duration:recipe.duration}},intensity,targetId)
+  },[applyMotionPlan])
 
   const setLayerPrototype=useCallback((id,patch)=>replaceLayer(id,l=>({...l,prototype:{...focusProto(),...(l.prototype||{}),...patch,links:{...emptyLinks(),...(l.prototype?.links||{}),...(patch.links||{})}}}),'Edit focus behavior'),[replaceLayer])
   const setFocusLink=useCallback((id,dir,targetId)=>setLayerPrototype(id,{links:{[dir]:targetId}}),[setLayerPrototype])
@@ -375,7 +425,7 @@ export function useMotionLab() {
     layers, selected, selectedId, setSelectedId, childrenOf, descendantsOf, isGroup,
     time, setTime, playing, setPlaying, loop, setLoop, speed, setSpeed, duration, setDuration, theme, setTheme, sparks, setSparks,
     snapshots, addSnapshot, toast, notify, currentProps, updateTimed, addKeyframe, deleteKeyframe, moveKeyframe,
-    updateAppearance, replaceLayer, reparent, reorderNear, addGroup, deleteSelected, importSvgText, importRaster, replaceWithSvg, replaceWithRaster, applyMotionRecipe, exportJson,
+    updateAppearance, replaceLayer, reparent, reorderNear, addGroup, deleteSelected, importSvgText, importRaster, replaceWithSvg, replaceWithRaster, applyMotionPlan, applyMotionRecipe, exportJson,
     beginTransaction, commitTransaction, cancelTransaction,
     undo, redo, canUndo:history.canUndo, canRedo:history.canRedo, undoLabel:history.undoLabel, redoLabel:history.redoLabel,
     undoDepth:history.undoDepth, redoDepth:history.redoDepth, historyEntries:history.historyEntries,

@@ -61,3 +61,42 @@
 @keyframes demoReveal{0%,18%{transform:translateY(30px);opacity:0}58%{transform:translateY(-3px);opacity:1}78%,100%{transform:none;opacity:1}}
 .ai-tune{height:calc(100vh - 64px);display:grid;grid-template-columns:minmax(0,1fr) 330px}.ai-live-stage{min-width:0;background:#ddd;display:flex;flex-direction:column}.ai-live-toolbar{height:44px;flex:none;background:#fafaf8;border-bottom:1px solid #d5d5d2;display:flex;align-items:center;padding:0 14px;font-size:10px;color:#888}.ai-live-toolbar b{margin-left:auto;color:#333}.ai-engine{flex:1;min-height:0}.ai-engine .canvas-area{width:100%;height:100%;display:flex;grid-column:auto;grid-row:auto}.ai-engine .canvas-toolbar{display:none}.ai-engine .canvas-viewport{flex:1}.ai-engine .selection-box,.ai-engine .canvas-status{display:none}.ai-tune-panel{background:#fff;border-left:1px solid #d9d9d6;padding:32px 26px;overflow:auto}.ai-tune-panel h2{font-size:25px;margin:8px 0}.ai-tune-panel>p{font-size:11px;color:#777;line-height:1.6;margin:0 0 30px}.simple-control{border-top:1px solid #eee;padding:20px 0}.simple-control>div:first-child{display:flex;justify-content:space-between;font-size:11px}.simple-control input{width:100%;accent-color:#111;margin:16px 0 5px}.control-ends{display:flex;justify-content:space-between;font-size:9px;color:#aaa}.loop-control{border-top:1px solid #eee;border-bottom:1px solid #eee;padding:16px 0;display:flex;align-items:center;justify-content:space-between}.loop-control span{display:flex;flex-direction:column}.loop-control b{font-size:11px}.loop-control small{font-size:9px;color:#aaa;margin-top:3px}.advanced-link{width:100%;border:0;background:transparent;margin-top:16px;font-size:9px;color:#888;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:1023px){.ai-studio{display:none}}
+
+
+/* AI director v2 */
+.director-read{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;
+  background:#dededb;border:1px solid #dededb;border-radius:14px;overflow:hidden;
+  margin:-4px 0 34px;
+}
+.director-read>div{background:#fff;padding:13px 14px;min-width:0}
+.director-read span{display:block;font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:#aaa;margin-bottom:6px}
+.director-read b{display:block;font-size:11px;font-weight:600;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.director-read-wide{grid-column:span 2}
+.director-read .caution b{color:#6e5c35}
+.idea-section-title{display:flex;align-items:baseline;gap:12px;margin:0 0 12px}
+.idea-section-title b{font-size:12px}
+.idea-section-title span{font-size:9px;color:#999}
+.idea-lane-pill{
+  position:absolute;right:12px;top:11px;padding:5px 7px;border-radius:999px;
+  background:rgba(255,255,255,.86);border:1px solid rgba(0,0,0,.08);
+  backdrop-filter:blur(8px);font-size:8px;font-weight:750;text-transform:uppercase;letter-spacing:.08em;color:#666
+}
+.idea-lane-pill.expressive{color:#6b4d18}.idea-lane-pill.playful{color:#73528d}
+.idea-plan{
+  margin-top:12px;padding-top:10px;border-top:1px solid #eee;
+  color:#999;font:500 9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace
+}
+.ai-plan-summary{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#e7e7e4;
+  border:1px solid #e7e7e4;border-radius:10px;overflow:hidden;margin:0 0 20px
+}
+.ai-plan-summary span{min-width:0;background:#fafaf8;padding:10px}
+.ai-plan-summary small{display:block;font-size:7.5px;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:5px}
+.ai-plan-summary b{display:block;font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.director-parts{display:flex;align-items:flex-start;gap:14px;margin:-20px 0 30px}
+.director-parts>span{width:92px;flex:none;padding-top:6px;font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:#aaa}
+.director-parts>div{display:flex;flex-wrap:wrap;gap:6px}
+.director-parts em{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:9px;font-style:normal;color:#444}
+.director-parts small{font-size:7.5px;color:#aaa;text-transform:uppercase;letter-spacing:.06em}
