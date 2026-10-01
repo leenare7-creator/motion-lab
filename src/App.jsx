@@ -61,14 +61,17 @@ export default function App(){
     return()=>window.removeEventListener('keydown',onKeyDown)
   },[lab.undo,lab.redo])
 
-  if(desktopOnly){
+  if(desktopOnly&&workspace==='advanced'){
     return <div className="desktop-only-screen">
       <div className="desktop-only-card">
         <div className="desktop-only-mark">M</div>
-        <h1>Motion Lab은 PC에서 사용할 수 있어요</h1>
-        <p>레이어 편집, 타임라인, 포커스 이동 검증은 넓은 화면과 마우스·키보드 환경을 기준으로 제공합니다.</p>
-        <div className="desktop-only-guide">PC에서 UI Studio를 열고 <b>Motion</b>을 선택해 다시 접속해 주세요.</div>
-        <a href="https://iptvuistudio.vercel.app">UI Studio로 돌아가기</a>
+        <h1>Advanced Editor는 PC에서 사용할 수 있어요</h1>
+        <p>레이어 편집, 타임라인, 포커스 이동 검증만 넓은 화면과 마우스·키보드 환경을 기준으로 제공합니다.</p>
+        <div className="desktop-only-guide">이미지 분석, AI 모션 3안 생성, Speed/Motion 조절과 Export는 모바일에서도 사용할 수 있어요.</div>
+        <div className="desktop-only-actions">
+          <button onClick={()=>setWorkspace('easy')}>AI Motion으로 돌아가기</button>
+          <a href="https://iptvuistudio.vercel.app">UI Studio</a>
+        </div>
       </div>
     </div>
   }
